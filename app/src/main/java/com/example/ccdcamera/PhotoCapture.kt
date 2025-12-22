@@ -10,12 +10,11 @@ import androidx.camera.core.ImageCaptureException
 import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.OutputStream
-
-fun takePhotoWithCcd(
+fun takePhotoWithCcdPreview(
     context: Context,
     imageCapture: ImageCapture,
     showDate: Boolean,
-    onSaved: (String) -> Unit,
+    onResult: (Bitmap) -> Unit,
     onError: (String) -> Unit
 ) {
     val tempFile = File(context.cacheDir, "raw_${System.currentTimeMillis()}.jpg")
@@ -31,13 +30,8 @@ fun takePhotoWithCcd(
                         path = tempFile.absolutePath,
                         drawDate = showDate
                     )
-
-                    val uri = saveToGallery(context, bitmap)
-
-                    bitmap.recycle()
                     tempFile.delete()
-
-                    onSaved(uri)
+                    onResult(bitmap)
                 } catch (e: Exception) {
                     tempFile.delete()
                     onError(e.message ?: "CCD işlem hatası")
@@ -51,7 +45,8 @@ fun takePhotoWithCcd(
         }
     )
 }
-private fun saveToGallery(
+
+internal fun saveToGallery(
     context: Context,
     bitmap: Bitmap
 ): String {

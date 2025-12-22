@@ -2,9 +2,12 @@ package com.example.ccdcamera
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Rational
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
+import androidx.camera.core.UseCaseGroup
+import androidx.camera.core.ViewPort
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.*
@@ -46,7 +49,6 @@ fun CameraPreview(
         }
     )
 }
-
 private fun bindCamera(
     context: Context,
     previewView: PreviewView,
@@ -66,12 +68,24 @@ private fun bindCamera(
             .requireLensFacing(lensFacing)
             .build()
 
+        // 🔑 KRİTİK KISIM
+        val viewPort = ViewPort.Builder(
+            Rational(previewView.width, previewView.height),
+            previewView.display.rotation
+        ).build()
+
+        val useCaseGroup = UseCaseGroup.Builder()
+            .setViewPort(viewPort)
+            .addUseCase(preview)
+            .addUseCase(imageCapture)
+            .build()
+
         provider.unbindAll()
         provider.bindToLifecycle(
             context as LifecycleOwner,
             selector,
-            preview,
-            imageCapture
+            useCaseGroup
         )
+
     }, ContextCompat.getMainExecutor(context))
 }
