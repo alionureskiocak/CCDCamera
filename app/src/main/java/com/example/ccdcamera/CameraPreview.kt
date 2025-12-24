@@ -2,15 +2,13 @@ package com.example.ccdcamera
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Rational
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
-import androidx.camera.core.UseCaseGroup
-import androidx.camera.core.ViewPort
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -21,39 +19,35 @@ import androidx.lifecycle.LifecycleOwner
 fun CameraPreview(
     imageCapture: ImageCapture,
     lensFacing: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onCameraReady: (Camera) -> Unit
 ) {
     AndroidView(
         modifier = modifier,
         factory = { context ->
             val previewView = PreviewView(context).apply {
-                scaleType = PreviewView.ScaleType.FILL_CENTER
+                scaleType = PreviewView.ScaleType.FIT_CENTER // crop yok
             }
 
             bindCamera(
                 context = context,
                 previewView = previewView,
                 imageCapture = imageCapture,
-                lensFacing = lensFacing
+                lensFacing = lensFacing,
+                onCameraReady = onCameraReady
             )
 
             previewView
-        },
-        update = { previewView ->
-            bindCamera(
-                context = previewView.context,
-                previewView = previewView,
-                imageCapture = imageCapture,
-                lensFacing = lensFacing
-            )
         }
     )
 }
+
 private fun bindCamera(
     context: Context,
     previewView: PreviewView,
     imageCapture: ImageCapture,
-    lensFacing: Int
+    lensFacing: Int,
+    onCameraReady: (Camera) -> Unit
 ) {
     val providerFuture = ProcessCameraProvider.getInstance(context)
 
@@ -68,24 +62,15 @@ private fun bindCamera(
             .requireLensFacing(lensFacing)
             .build()
 
-        // 🔑 KRİTİK KISIM
-        val viewPort = ViewPort.Builder(
-            Rational(previewView.width, previewView.height),
-            previewView.display.rotation
-        ).build()
-
-        val useCaseGroup = UseCaseGroup.Builder()
-            .setViewPort(viewPort)
-            .addUseCase(preview)
-            .addUseCase(imageCapture)
-            .build()
-
         provider.unbindAll()
-        provider.bindToLifecycle(
+        val camera = provider.bindToLifecycle(
             context as LifecycleOwner,
             selector,
-            useCaseGroup
+            preview,
+            imageCapture
         )
+
+        onCameraReady(camera)
 
     }, ContextCompat.getMainExecutor(context))
 }

@@ -10,6 +10,7 @@ import androidx.camera.core.ImageCaptureException
 import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.OutputStream
+
 fun takePhotoWithCcdPreview(
     context: Context,
     imageCapture: ImageCapture,
@@ -26,7 +27,7 @@ fun takePhotoWithCcdPreview(
 
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                 try {
-                    val bitmap = CcdImageProcessor.process(
+                    val bitmap = CcdRetroProcessor.process(
                         path = tempFile.absolutePath,
                         drawDate = showDate
                     )
@@ -67,8 +68,7 @@ internal fun saveToGallery(
     ) ?: throw IllegalStateException("MediaStore insert failed")
 
     resolver.openOutputStream(uri).use { out: OutputStream? ->
-        if (out == null) throw IllegalStateException("OutputStream null")
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out!!)
     }
 
     if (Build.VERSION.SDK_INT >= 29) {
